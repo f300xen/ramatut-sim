@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rama-Tut Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #555;
+            color: #ffffff;
+            margin: 0;
+            padding: 0 40px; /* Added some outer padding since title is gone */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- Layout Containers --- */
+        .main-layout {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 0 0 auto;
+            position: sticky; /* Optional: keeps Rama-Tut in view if list gets long */
+	    padding-top: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            justify-content: center; /* Centers the column in the available space */
+	    padding-top: 20px;
+        }
+
+        /* --- Mobile Responsiveness --- */
+        @media (max-width: 800px) {
+            .main-layout {
+                flex-direction: column;
+                align-items: center;
+            }
+            .right-panel {
+                width: 100%;
+                margin-top: 30px;
+            }
+            .left-panel {
+                position: static;
+            }
+        }
+
+        /* --- Button Styling --- */
+        #draw-btn {
+            background-color: #5500ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s, transform 0.1s;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        #draw-btn:hover {
+            background-color: #7733ff;
+        }
+
+        #draw-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- Card Containers --- */
+        #card-container {
+            display: flex;
+            flex-direction: column; /* Force vertical stacking */
+            align-items: center;
+            gap: 15px; /* Space between the stacked cards */
+            width: 100%;
+        }
+
+        .card {
+            background: #2b2b2b;
+            border: 1px solid #3d3d3d;
+            border-radius: 10px;
+            padding: 10px 20px; /* Reduced vertical padding (10px top/bottom) */
+            width: 300px;       /* Width unchanged */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #ff0055;
+        }
+
+        .card-logo {
+            max-width: 100%;
+            height: auto;
+            max-height: 80px; /* Slightly reduced max-height for compact look */
+            margin-bottom: 10px;
+            object-fit: contain;
+        }
+
+        .card-desc {
+            color: #d1d1d1;
+        }
+        
+        .card-desc b {
+            color: #ffffff;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-layout">
+        
+        <!-- LEFT PANEL: Rama-Tut & Button -->
+        <div class="left-panel">
+            <div class="card" style="border-color: #ffce00; padding: 20px;"> 
+                <img src="ramatut.webp" style="max-width: 100%; border-radius: 5px;" alt="Rama-Tut">
+                <div class="card-desc">
+                    <b>On Reveal:</b> Use 3 <b>On Reveals</b> from cards released before Rama-Tut's time.
+                </div>
+            </div>
+            <button id="draw-btn">Regenerate</button>
+        </div>
+
+        <!-- RIGHT PANEL: The 3 Random Cards -->
+        <div class="right-panel">
+            <div id="card-container">
+                <!-- Javascript will populate this -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let cardData = [
+    {
+        "name": "Aero",
+        "description": "<b>On Reveal:</b> The last card your opponent played moves to this location."
+    },
+    {
+        "name": "Agent13",
+        "description": "<b>On Reveal:</b> Add a random card to your hand."
+    },
+    {
+        "name": "AgentCoulson",
+        "description": "<b>On Reveal:</b> Add a random 4-Cost and 5-Cost card to your hand."
+    },
+    {
+        "name": "Alioth",
+        "description": "<b>On Reveal:</b> Remove the text from all unrevealed enemy characters here."
+    },
+    {
+        "name": "AmericaChavez",
+        "description": "<b>On Reveal:</b> Give the top card of your deck +3 Power."
+    },
+    {
+        "name": "AntiVenom",
+        "description": "<b>On Reveal:</b> Set the Cost and Power of your deck's top card to 0."
+    },
+    {
+        "name": "Ares",
+        "description": "<b>On Reveal:</b> Compare the Power of the top 3 cards of both decks. If your total is higher, +6 Power."
+    },
+    {
+        "name": "ArnimZola",
+        "description": "<b>On Reveal:</b> Destroy one of your other cards here to copy it at the other locations."
+    },
+    {
+        "name": "BaronZemo",
+        "description": "<b>On Reveal:</b> Recruit a card that costs the least from your opponent's deck to your side of this location."
+    },
+    {
+        "name": "Bastion",
+        "description": "<b>On Reveal:</b> Add copies of your other cards here to your hand. Set their Costs to 2 and Power to 3."
+    },
+    {
+        "name": "BlackBolt",
+        "description": "<b>On Reveal:</b> Discard the card that costs the least from your opponent's hand."
+    },
+    {
+        "name": "BlackPanther",
+        "description": "<b>On Reveal:</b> Double this card's Power."
+    },
+    {
+        "name": "Blink",
+        "description": "<b>On Reveal:</b> Swap the last card you played with a card that costs more from your deck."
+    },
+    {
+        "name": "Blob",
+        "description": "<b>On Reveal:</b> Merge cards from your deck into this until it gains 13 or more Power."
+    },
+    {
+        "name": "Brood",
+        "description": "<b>On Reveal:</b> Add 2 Broodlings here with the same Power."
+    },
+    {
+        "name": "Cable",
+        "description": "<b>On Reveal:</b> Draw a card from your opponent's deck."
+    },
+    {
+        "name": "Cannonball",
+        "description": "<b>On Reveal:</b> Move the highest-Power enemy card here away. If you can't, destroy it with a Rock."
+    },
+    {
+        "name": "CassandraNova",
+        "description": "<b>On Reveal:</b> Steal 1 Power from each card in your opponent's deck."
+    },
+    {
+        "name": "Cloak",
+        "description": "<b>On Reveal:</b> Next turn, both players can move cards to this location."
+    },
+    {
+        "name": "CosmicGhostRider",
+        "description": "<b>On Reveal:</b> Remove the text from front-row enemy cards here."
+    },
+    {
+        "name": "Crystal",
+        "description": "<b>On Reveal:</b> Each player draws a card."
+    },
+    {
+        "name": "Daken",
+        "description": "<b>On Reveal:</b> Add the Muramasa Shard to your hand."
+    },
+    {
+        "name": "DeafeningChord",
+        "description": "<b>On Reveal:</b> Afflict an enemy character here that costs 3 or less with -1 Power and remove its text."
+    },
+    {
+        "name": "Destroyer",
+        "description": "<b>On Reveal:</b> Destroy your cards at other locations."
+    },
+    {
+        "name": "DoctorOctopus",
+        "description": "<b>On Reveal:</b> Pull the lowest-Power card from your opponent's hand to their side of this location."
+    },
+    {
+        "name": "DoctorStrange",
+        "description": "<b>On Reveal:</b> Move your highest-Power card(s) to this location."
+    },
+    {
+        "name": "Electro",
+        "description": "<b>On Reveal:</b> +1 Max Energy. <b>Ongoing:</b> You can only play 1 card a turn."
+    },
+    {
+        "name": "FallenOne",
+        "description": "<b>On Reveal:</b> Set your Max Energy equal to this card's Power."
+    },
+    {
+        "name": "Forge",
+        "description": "<b>On Reveal:</b> Give the next card you play +2 Power."
+    },
+    {
+        "name": "Frigga",
+        "description": "<b>On Reveal:</b> Add a copy of the last card you played to your hand. <i>(if able)</i>"
+    },
+    {
+        "name": "Gambit",
+        "description": "<b>On Reveal:</b> Discard a card from your hand to destroy a random enemy card."
+    },
+    {
+        "name": "Gilgamesh",
+        "description": "<b>On Reveal:</b> +1 Power for each of your other cards in play with increased Power."
+    },
+    {
+        "name": "Gladiator",
+        "description": "<b>On Reveal:</b> Add a card from your opponent's deck to their side of this location. If it has less Power, destroy it."
+    },
+    {
+        "name": "GrandMaster",
+        "description": "<b>On Reveal:</b> Move one of your other <b>On Reveal</b> cards here to the middle location. Its ability happens again."
+    },
+    {
+        "name": "Gwenpool",
+        "description": "<b>On Reveal:</b> Pick a random character in your hand 3 times. Give +2 Power each time."
+    },
+    {
+        "name": "Hawkeye",
+        "description": "<b>On Reveal:</b> If you play a card at this location next turn, +3 Power."
+    },
+    {
+        "name": "Hazmat",
+        "description": "<b>On Reveal:</b> Afflict all other cards with -1 Power."
+    },
+    {
+        "name": "Hellion",
+        "description": "<b>On Reveal:</b> Next turn, you can move cards to this location."
+    },
+    {
+        "name": "HitMonkey",
+        "description": "<b>On Reveal:</b> Gain +2 Power for each other card you played this turn."
+    },
+    {
+        "name": "Hood",
+        "description": "<b>On Reveal:</b> Add a Demon to your hand."
+    },
+    {
+        "name": "HydroMan",
+        "description": "<b>On Reveal:</b> Set the Cost of EACH deck's top card to 1."
+    },
+    {
+        "name": "Iceman",
+        "description": "<b>On Reveal:</b> Give a card in your opponent's hand +1 Cost. <i>(maximum 6)</i>"
+    },
+    {
+        "name": "Ironheart",
+        "description": "<b>On Reveal:</b> Give 2 of your other cards +3 Power."
+    },
+    {
+        "name": "IronPatriot",
+        "description": "<b>On Reveal:</b> Add a random 4, 5, or 6-Cost card to your hand. If you’re winning here after next turn, give it -3 Cost."
+    },
+    {
+        "name": "Jubilee",
+        "description": "<b>On Reveal:</b> Add the top card of your deck to this location."
+    },
+    {
+        "name": "Juggernaut",
+        "description": "<b>On Reveal:</b> Move away all enemy cards played here this turn. <i>(including unrevealed cards)</i>"
+    },
+    {
+        "name": "Kahhori",
+        "description": "<b>On Reveal:</b> Each card in your hand gives one of your other cards in play +1 Power."
+    },
+    {
+        "name": "KateBishop",
+        "description": "<b>On Reveal:</b> Add 2 Arrows to your hand."
+    },
+    {
+        "name": "Korg",
+        "description": "<b>On Reveal:</b> Shuffle a Rock into your opponent's deck."
+    },
+    {
+        "name": "Laufey",
+        "description": "<b>On Reveal:</b> Steal 1 Power from each other card here."
+    },
+    {
+        "name": "Leader",
+        "description": "<b>On Reveal:</b> Copy the enemy card(s) with the highest Power played this turn, but on your side."
+    },
+    {
+        "name": "Legion",
+        "description": "<b>On Reveal:</b> Replace each other location with this one."
+    },
+    {
+        "name": "Loki",
+        "description": "<b>On Reveal:</b> Replace your deck with your opponent's starting deck. Give those cards -1 Cost."
+    },
+    {
+        "name": "LunaSnow",
+        "description": "<b>On Reveal:</b> Add an Ice Cube to each side of this location."
+    },
+    {
+        "name": "Magneto",
+        "description": "<b>On Reveal:</b> Move all enemy 3 and 4-Cost cards to this location."
+    },
+    {
+        "name": "Malekith",
+        "description": "<b>On Reveal:</b> Add a 1, 2, or 3-Cost card from your deck here, but don't reveal it until the game ends."
+    },
+    {
+        "name": "MariaHill",
+        "description": "<b>On Reveal:</b> Add a random 2-Cost card to your hand."
+    },
+    {
+        "name": "Mirage",
+        "description": "<b>On Reveal:</b> Copy the character that costs the least from your opponent's hand into your hand. Give it +2 Power."
+    },
+    {
+        "name": "Modok",
+        "description": "<b>On Reveal:</b> Discard your hand."
+    },
+    {
+        "name": "MoleMan",
+        "description": "<b>On Reveal:</b> Banish the top card of your deck. Add 2 Rocks to your hand. Set their Power to the banished card’s Cost."
+    },
+    {
+        "name": "MoonKnight",
+        "description": "<b>On Reveal:</b> Discard an even-costed card from each player's hand."
+    },
+    {
+        "name": "Nakia",
+        "description": "<b>On Reveal:</b> Give all cards in your hand +1 Power."
+    },
+    {
+        "name": "Odin",
+        "description": "<b>On Reveal:</b> Repeat the <b>On Reveal</b> abilities of your other cards here."
+    },
+    {
+        "name": "Okoye",
+        "description": "<b>On Reveal:</b> Give every card in your deck +1 Power."
+    },
+    {
+        "name": "PeniParker",
+        "description": "<b>On Reveal:</b> Add SP//dr to your hand. When this merges, you get +1 Energy next turn."
+    },
+    {
+        "name": "Phastos",
+        "description": "<b>On Reveal:</b> Give each card in your deck -1 Cost or +2 Power."
+    },
+    {
+        "name": "Polaris",
+        "description": "<b>On Reveal:</b> Move an enemy 1 or 2-Cost card to this location."
+    },
+    {
+        "name": "Prowler",
+        "description": "<b>On Reveal:</b> Add 2 Thief’s Tools to your hand. Set their Costs to 0 if a card moved last turn."
+    },
+    {
+        "name": "Psylocke",
+        "description": "<b>On Reveal:</b> Next turn, you get +1 Energy."
+    },
+    {
+        "name": "Quake",
+        "description": "<b>On Reveal:</b> Swap the positions of the other two locations."
+    },
+    {
+        "name": "RedGuardian",
+        "description": "<b>On Reveal:</b> Afflict the lowest-Power enemy card here with -2 Power and remove its text."
+    },
+    {
+        "name": "Rockslide",
+        "description": "<b>On Reveal:</b> Shuffle 2 Rocks into your opponent's deck."
+    },
+    {
+        "name": "Sage",
+        "description": "<b>On Reveal:</b> +2 Power for each different Power among all other cards here."
+    },
+    {
+        "name": "Sandman",
+        "description": "<b>On Reveal:</b> Next turn, cards cost 1 more. <i>(maximum 6)</i>"
+    },
+    {
+        "name": "ScarletWitch",
+        "description": "<b>On Reveal:</b> Replace this location with a new one."
+    },
+    {
+        "name": "Scorpion",
+        "description": "<b>On Reveal:</b> Afflict cards in your opponent's hand with -1 Power."
+    },
+    {
+        "name": "Selene",
+        "description": "<b>On Reveal:</b> Afflict the lowest-Power card in each player's hand with -3 Power."
+    },
+    {
+        "name": "Sentinel",
+        "description": "<b>On Reveal:</b> Add another Sentinel to your hand."
+    },
+    {
+        "name": "Sersi",
+        "description": "<b>On Reveal:</b> Transform your other characters here into random ones that cost 1 more. <i>(if possible)</i>"
+    },
+    {
+        "name": "ShangChi",
+        "description": "<b>On Reveal:</b> Destroy an enemy card here that has 10 or more Power."
+    },
+    {
+        "name": "Shanna",
+        "description": "<b>On Reveal:</b> Add a random 1-Cost card to each location."
+    },
+    {
+        "name": "Shuri",
+        "description": "<b>On Reveal:</b> If you play your next card at this location, double its Power."
+    },
+    {
+        "name": "SilverSable",
+        "description": "<b>On Reveal:</b> Steal 2 Power from the top card of your opponent's deck."
+    },
+    {
+        "name": "SilverSamurai",
+        "description": "<b>On Reveal:</b> Each player discards the lowest-Power card from their hand."
+    },
+    {
+        "name": "SilverSurfer",
+        "description": "<b>On Reveal:</b> Give your other 3-Cost cards +2 Power."
+    },
+    {
+        "name": "Spiderman",
+        "description": "<b>On Reveal:</b> Move to another location and pull an enemy card from here to there."
+    },
+    {
+        "name": "SpiderWoman",
+        "description": "<b>On Reveal:</b> Afflict all enemy cards here with -1 Power."
+    },
+    {
+        "name": "Stegron",
+        "description": "<b>On Reveal:</b> Move an enemy card here one location to the right."
+    },
+    {
+        "name": "Storm",
+        "description": "<b>On Reveal:</b> Flood this location. Next turn is the last turn cards can be played here."
+    },
+    {
+        "name": "Taskmaster",
+        "description": "<b>On Reveal:</b> Set this card’s Power equal to that of the last card you played. <i>(if able)</i>"
+    },
+    {
+        "name": "Terrax",
+        "description": "<b>On Reveal:</b> For each location, shuffle a Rock into the losing player's deck."
+    },
+    {
+        "name": "TheHunger",
+        "description": "<b>On Reveal:</b> <b>Horde +3</b>."
+    },
+    {
+        "name": "Valentina",
+        "description": "<b>On Reveal:</b> Add a random 6-Cost card to your hand. Give it -2 Cost and -2 Power."
+    },
+    {
+        "name": "Venom",
+        "description": "<b>On Reveal:</b> Destroy your other cards here. Add their Power to this card."
+    },
+    {
+        "name": "Viper",
+        "description": "<b>On Reveal:</b> One of your other cards here with the lowest Power switches sides."
+    },
+    {
+        "name": "Wave",
+        "description": "<b>On Reveal:</b> All cards cost a maximum of 4 until the end of next turn."
+    },
+    {
+        "name": "WhiteQueen",
+        "description": "<b>On Reveal:</b> Copy the card that costs the most from your opponent's hand into your hand."
+    },
+    {
+        "name": "WhiteTiger",
+        "description": "<b>On Reveal:</b> Add a 9-Power Tiger to another location."
+    },
+    {
+        "name": "Wolfsbane",
+        "description": "<b>On Reveal:</b> +2 Power for each other card you have here."
+    },
+    {
+        "name": "ZombieGiantMan",
+        "description": "<b>On Reveal:</b> <b>Horde +2</b>, then this gains Power equal to your Zombie Horde."
+    },
+    {
+        "name": "ZombieSentry",
+        "description": "<b>On Reveal:</b> <b>Horde +1</b> for each of your cards at the right location."
+    }
+];
+
+        const btn = document.getElementById('draw-btn');
+        const container = document.getElementById('card-container');
+
+        function drawCards() {
+            if (cardData.length === 0) {
+                // console.log used instead of alert so it doesn't pop up annoyingly on page load if data is empty
+                console.log("Data is not loaded yet!");
+                return;
+            }
+
+            // Clear previous cards
+            container.innerHTML = '';
+
+            // Pick 3 unique random indices
+            const randomIndices = new Set();
+            // Safety check: ensure we don't loop forever if there are fewer than 3 cards total
+            const cardsToDraw = Math.min(3, cardData.length);
+
+            while (randomIndices.size < cardsToDraw) {
+                const r = Math.floor(Math.random() * cardData.length);
+                randomIndices.add(r);
+            }
+
+            // Generate HTML for the 3 cards
+            randomIndices.forEach(index => {
+                const card = cardData[index];
+                
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                
+                const logoImg = document.createElement('img');
+                logoImg.className = 'card-logo';
+                logoImg.alt = card.name;
+                logoImg.src = `https://game-assets.snap.fan/processed_source_images/Baked/Logos/${card.name}%2F${card.name}_Logo.webp?width=500&quality=80`;
+                
+                // Inline styles to ensure it fits nicely inside the card
+                logoImg.style.maxWidth = "100%";
+                logoImg.style.height = "80px";
+                logoImg.style.objectFit = "contain";
+
+                const descDiv = document.createElement('div');
+                descDiv.className = 'card-desc';
+                
+                // We use .innerHTML instead of .innerText so <b> tags are rendered as HTML
+                descDiv.innerHTML = card.description || "No description available.";
+
+                cardDiv.appendChild(logoImg);
+                cardDiv.appendChild(descDiv);
+                container.appendChild(cardDiv);
+            });
+        }
+
+        // Add event listener to button
+        btn.addEventListener('click', drawCards);
+
+        // Call the function immediately on page load
+        drawCards();
+    </script>
+</body>
+</html>
